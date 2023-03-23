@@ -1,0 +1,372 @@
+---
+title: "Final Project Stat 184"
+date: "Dec 10 2020"
+author: "Ching-Wei(Dean) Wang"
+output: html_notebook
+---
+
+## Load packages and additonal data
+```{r}
+library(rvest)
+library(tidyverse)
+library(genius)
+library(tidytext)
+library(dplyr)
+library(gridExtra)
+library(esquisse)
+library(ggplot2)
+data("stop_words")
+```
+
+## Scrape and create table of records from 1980-2010
+The following chunck of code is the process of scraping the data tables from the Wikipedia page for Grammy Awards Nomination from 1980- 2019. The code is taken from the project starter help script and modified according to each table. 
+```{r}
+# read webpage for Grammy Awards
+webpage <- read_html("https://en.wikipedia.org/wiki/Grammy_Award_for_Record_of_the_Year")
+
+# copy xpath for tables 1980 - 2010
+XPATH80 <- '/html/body/div[3]/div[3]/div[5]/div[1]/table[5]'
+XPATH90 <- '/html/body/div[3]/div[3]/div[5]/div[1]/table[6]'
+XPATH00 <- '/html/body/div[3]/div[3]/div[5]/div[1]/table[7]'
+XPATH10 <- '/html/body/div[3]/div[3]/div[5]/div[1]/table[8]'
+# loading tables for each decade
+table_1980 <- 
+  webpage %>%
+  html_nodes(xpath = XPATH80) %>%
+  html_table(fill = TRUE)
+table_1990 <- 
+  webpage %>%
+  html_nodes(xpath = XPATH90) %>%
+  html_table(fill = TRUE)
+table_2000 <- 
+  webpage %>%
+  html_nodes(xpath = XPATH00) %>%
+  html_table(fill = TRUE)
+table_2010 <- 
+  webpage %>%
+  html_nodes(xpath = XPATH10) %>%
+  html_table(fill = TRUE)
+
+d1980 <- table_1980[[1]]
+d1990 <- table_1990[[1]]
+d2000 <- table_2000[[1]]
+d2010 <- table_2010[[1]]
+```
+##### Data Cleaning for Year 1980
+The following code chunk is the process of cleaning up the 1980 data frame scraped from the internet. The columns were renamed according to the instructions and unused columns were dropped, then lyrics are attached after cleaning the table using the Genius package.
+```{r}
+#Renaming column names
+names(d1980)[names(d1980)=="Year[I]"] <-"year"
+names(d1980)[names(d1980)=="Artist(s)"]<- "artist"
+names(d1980)[names(d1980)=="Record"]<-"track"
+#dropping the last column
+d1980<- d1980[,-c(4)]%>%
+  na.omit(d1980)
+#Cleaning the year column
+d1980$year<- substring(d1980$year,1,4)
+#renaming the data frame
+ROY80s<- d1980
+head(ROY80s)
+# get lyrics for songs 1980s and specifying decade by adding new column
+lyrics80s <- ROY80s %>%
+  add_genius(artist, track, type = "lyrics")%>%
+  mutate(decade="1980s")
+
+```
+##### Data Cleaning for Year 1990
+The following code chunk is the process of cleaning up the 1990 data frame scraped from the internet. The columns were renamed according to the instructions and unused columns were dropped, then lyrics are attached after cleaning the table using the Genius package.
+```{r}
+#Renaming column names
+names(d1990)[names(d1990)=="Year[I]"] <-"year"
+names(d1990)[names(d1990)=="Artist(s)"]<- "artist"
+names(d1990)[names(d1990)=="Record"]<-"track"
+#dropping the last column
+d1990<- d1990[,-c(4)]%>%
+  na.omit(d1990)
+#Cleaning the year column
+d1990$year<- substring(d1990$year,1,4)
+#renaming the data frame
+ROY90s<- d1990
+head(ROY90s)
+# get lyrics for songs 1990s and specifying decade by adding new column
+lyrics90s <- ROY90s %>%
+  add_genius(artist, track, type = "lyrics")%>%
+  mutate(decade="1990s")
+```
+##### Data Cleaning for Year 2000
+The following code chunk is the process of cleaning up the 2000 data frame scraped from the internet. The columns were renamed according to the instructions and unused columns were dropped, then lyrics are attached after cleaning the table using the Genius package.
+```{r}
+#Renaming column names
+names(d2000)[names(d2000)=="Year[I]"] <-"year"
+names(d2000)[names(d2000)=="Artist(s)"]<- "artist"
+names(d2000)[names(d2000)=="Record"]<-"track"
+#dropping the last column
+d2000<- d2000[,-c(4)]%>%
+  na.omit(d2000)
+#Cleaning the year column
+d2000$year<- substring(d2000$year,1,4)
+#renaming the data frame
+ROY00s<- d2000
+head(ROY00s)
+# get lyrics for songs 2000s and specifying decade by adding a new column
+lyrics00s <- ROY00s %>%
+  add_genius(artist, track, type = "lyrics")%>%
+  mutate(decade="2000s")
+```
+##### Data Cleaning for Year 2010
+The following code chunk is the process of cleaning up the 2010 data frame scraped from the internet. The columns were renamed according to the instructions and unused columns were dropped, then lyrics are attached after cleaning the table using the Genius package.
+```{r}
+names(d2010)[names(d2010)=="Year[I]"] <-"year"
+names(d2010)[names(d2010)=="Artist(s)"]<- "artist"
+names(d2010)[names(d2010)=="Record"]<-"track"
+#dropping the last column
+d2010<- d2010[,-c(4)]%>%
+  na.omit(d2010)
+#Cleaning the year column
+d2010$year<- substring(d2010$year,1,4)
+#renaming the data frame
+ROY10s<- d2010
+head(ROY10s)
+# get lyrics for songs 2010s and specifying decade by adding a new column
+lyrics10s <- ROY10s %>%
+  add_genius(artist, track, type = "lyrics")%>%
+  mutate(decade="2010s")
+```
+##### Combining data frames
+After cleaning and attaching the lyrics for each years data frame, the 4 data frames are then combined into one big data frame for further data wrangling. 
+```{r}
+#Combining all data frames into 1 
+RecordsWithLyrics<- rbind(lyrics80s,lyrics90s,lyrics00s,lyrics10s)
+head(RecordsWithLyrics)
+```
+##### Store as csv in working directory for further data wrangling
+```{r}
+write.csv(RecordsWithLyrics,"/Users/DeanWang 1/Desktop/Stat184/184-Final-Project/RecordWithLyrics.csv")
+```
+##### Creating new columns for wordcount 
+New column wordPerLine is created to keep track of how many words are in each line. Then another column wordPerSong is created which adds up the word count per song by summing up the values from wordPerLine and grouping by each track
+```{r}
+#Count words in each line
+RecordsWithLyrics<-
+  RecordsWithLyrics%>%
+  mutate(wordPerLine=lengths(gregexpr("\\W+", lyric)) + 1 ) %>%
+  group_by(track_title)
+#count words for each song
+RecordsWithLyrics<- 
+  RecordsWithLyrics%>%
+  mutate(wordPerSong= sum(wordPerLine))%>%
+  group_by(track)
+```
+
+
+
+
+
+
+## Graphs
+
+
+### Graph 1 :Boxplots of Words per Grammy Nominated Song by Decade
+The following code provides a visualization of words per song by decade. Boxplots are generated using tools such as ggplot and esquisse. For this instance, the X-axis contains the variable decade and the Y-axis is the variable wordsPerSong. Then in order to make the information easier to read, the boxplots are filled with different color for each decade
+```{r}
+# Graph is Generated using the esquisse package
+ggplot(RecordsWithLyrics) +
+  aes(x = decade, y = wordPerSong, fill = decade) +
+  geom_boxplot() +
+  scale_fill_hue() +
+  labs(x = "Decade", y = "Words Per Song", title = "Boxplots of Words per Grammy Nominated Song by Decade") +
+  theme_minimal()  
+```
+
+##### Process of filtering out stop words and additional stop words
+The following chunk of code is modified from the project starter help codes, which creates a data frame after filtering out the words in the "stop_words" data frame, then additional stop words that are not included in the "stop_words" package are then filtered out to create the data frame for top 10 words.
+```{r}
+# read in records of the year subset file RecordsWithLyrics which is a clean data table with lyrics in csv format
+records <- read.csv("RecordWithLyrics.csv", sep = ",", header=T)
+# create data frame of top 10 words after filtering out unwanted words
+verse_words <- records %>%
+  unnest_tokens(word, lyric)
+ft <- verse_words %>%
+  anti_join(stop_words)
+#additional stop words
+additionalStopWords<-c("em","ba","du","yeah","da","ya","ooh","gonna","na","uh","la","hol")
+#data frame
+topten <- ft %>%
+  count(word, sort = TRUE) %>%
+  filter(n >= 3) %>%
+  filter(!word %in% additionalStopWords) %>% #Review topten and filter words missed by stop_words
+  top_n(10)
+
+```
+
+
+
+### Graph 2: 10 most popular words of Grammy Nominated Songs from 1980-2019
+The following graph is a visualization of the top 10 most popular words in the nominated songs from 1980-2019. The words are the in the X-axis and Y is the count of occurrence for each word. The reorder function is used to arrange the bar charts in decending order.
+```{r}
+# Graph is Generated using the esquisse package
+ggplot(topten) +
+  aes(x = reorder(word,-n), weight = n) +
+  geom_bar(fill = "blue") +
+  labs(x = "Word", y = "Count", title = "10 most popular words of Grammy Nominated Songs from 1980-2019") +
+  theme_minimal()
+```
+
+##### Process of organizing data for each decade
+The following chunck of code is the data wranging of most popular words for each decade. Each graph is generated by creating a separate data frame for each decade by using the filter function.
+```{r}
+#1980
+graph3_1980data<-
+  ft%>%
+  group_by(decade)%>%
+  count(word, sort = TRUE)%>%
+  filter(n >= 3)%>%
+  filter(decade=="1980s")%>%
+  filter(!word %in% additionalStopWords)%>%
+  top_n(10)
+
+#1990
+graph3_1990data<-
+  ft%>%
+  group_by(decade)%>%
+  count(word, sort = TRUE)%>%
+  filter(n >= 3)%>%
+  filter(decade=="1990s")%>%
+  filter(!word %in% additionalStopWords)%>%
+  top_n(10)
+
+#2000
+graph3_2000data<-
+  ft%>%
+  group_by(decade)%>%
+  count(word, sort = TRUE)%>%
+  filter(n >= 3)%>%
+  filter(decade=="2000s")%>%
+  filter(!word %in% additionalStopWords)%>%
+  top_n(10)
+
+#2010
+graph3_2010data<-
+  ft%>%
+  group_by(decade)%>%
+  count(word, sort = TRUE)%>%
+  filter(n >= 3)%>%
+  filter(decade=="2010s")%>%
+  filter(!word %in% additionalStopWords)%>%
+  top_n(10)
+```
+## Graph 3: Top 10 Words by Decade
+After creating a data frame for each decade, each frame is then used to create the graph for the decade using ggplot/esquisse. In order for the graphs to be clean and readable, instead of creating all four graphs at once the graph for each decade is created separately then put into a big one by using tools from the gridExtra package. 
+```{r}
+#Graph for 1980
+p3_1980<-
+  ggplot(graph3_1980data) +
+  aes(x = reorder(word,-n), weight = n) +
+  geom_bar(fill = "Blue") +
+  labs(x = "Word", y = "Count", title = "1980s") +
+  theme_minimal()
+#Graph for 1990
+p3_1990<-
+  ggplot(graph3_1990data) +
+  aes(x = reorder(word,-n), weight = n) +
+  geom_bar(fill = "Red") +
+  labs(x = "Word", y = "Count", title = "1990s") +
+  theme_minimal()
+#Graph for 2000
+p3_2000<-
+  ggplot(graph3_2000data) +
+  aes(x = reorder(word,-n), weight = n) +
+  geom_bar(fill = "Black") +
+  labs(x = "Word", y = "Count", title = "2000s") +
+  theme_minimal()
+#Graph for 2010
+p3_2010<-
+  ggplot(graph3_2010data) +
+  aes(x = reorder(word,-n), weight = n) +
+  geom_bar(fill = "Grey") +
+  labs(x = "Word", y = "Count", title = "2010s") +
+  theme_minimal()
+#combining 4 plots together using the gridExtra package
+p3<-grid.arrange(p3_1980, p3_1990,p3_2000,p3_2010, nrow = 2)
+
+
+```
+
+##### Data wrangling for sentiment
+The sentiment frame was reprogrammed by replacing the value "negative" with 0 and value "positive" with 1. The 0's & 1's are then converted into the integer data type by using the transform function and joined onto the data frame ft generated from earlier that has all the songs with lyrics attached before filtering out the additional stop words. The additional stop words are then filtered out and the net sentiment score is then generated using the summary function and sum function. 
+```{r}
+data("sentiments")
+#reprogramming sentiment: negative =0, positive=1
+sentiments$sentiment[sentiments$sentiment=='negative']<-0
+sentiments$sentiment[sentiments$sentiment=='positive']<-1
+NewSentiments<- transform(sentiments,sentiment = as.numeric(sentiment))
+#transform data type
+ft<-transform(ft,year = as.character(year))
+#clean data frame with sentiment
+p4_data<-ft%>%
+  group_by(decade,year)%>%
+  filter(!word %in% additionalStopWords)%>%
+  inner_join(NewSentiments)%>%
+  summarise(count = sum(sentiment))
+```
+
+## Graph 4: Net Sentiment Score by Year
+The following graph uses the ready to use data frame for graph 4 and is created using ggplot/esquisse. Each bar represents the sentiment score for each year/song and is then filled in with different colors according to the decade it's in. 
+```{r}
+ggplot(p4_data) +
+  aes(x = year, fill = decade, weight = count) +
+  geom_bar() +
+  scale_x_discrete(breaks=seq(1900, 2020, 10))+
+  scale_fill_hue() +
+  labs(x = "Year", y = "Net Sentiment", title = "Net Sentiment Score by Year") +
+  theme_minimal()
+```
+
+##### Data Wrangling for Graph 5
+The data use for graph 5 takes the data frame generated from graph 4 data frame. The mean is calculated using the mean function and the summarise function and grouped by decade. 
+```{r}
+#taking data from graph 4 to wrangle into data for graph 5 
+p5_data<-p4_data%>%
+  select(decade,year,count)%>%
+  group_by(decade)%>%
+  summarise(count = mean(count))
+```
+
+## Graph 5: Mean Sentiment Score by decade
+The following graph is generated using ggplot/esquisse. The bar graph has the mean sentiment score on the y-axis and each decade of the x-axis and the bars are filled with different colors according to the decade its in. 
+```{r}
+ggplot(p5_data) +
+ aes(x = decade, fill = decade, weight = count) +
+ geom_bar() +
+ scale_fill_hue() +
+ labs(x = "Year", y = "Mean Sentiment Score", title = "Mean Sentiment Score By Decade") +
+ theme_minimal() +
+ theme(legend.position = "none")
+```
+##### Data Wrangling for Graph 6
+The following chunck of code the the data wrangling for graph 6. The frame takes data from the frame that has all the lyrics and songs, filtered out out the stop words and joined by the reprogrammed sentiment table and summed up the sentiment scores for each song. The year variable is transformed from character data type into integer. 
+```{r}
+
+p6_data<-ft%>%
+    group_by(decade,year)%>%
+    filter(!word %in% additionalStopWords)%>%
+  #Joining the recoded sentiments table into the clean data frame after filtering words  
+  inner_join(NewSentiments)%>%
+    summarise(count = sum(sentiment))
+#transform year to numeric for scatter plot graph
+p6_data<-transform(p4_data,year=as.numeric(year))
+```
+
+## Graph 6: Net Sentiment Score By Year of Grammy Nominated Records from 1980-2019 with Linear Model Fit
+The following graph is generated using only ggplot.The graph has Net Sentiment as it's Y-axis and Year on the X-axis. Scatter plot is created using the geom_point function and each point on the graph represents the song for that year with it's color representing the decade. A regrerssion line is then added using the geom_smooth function without adding the confidence interval.
+```{r}
+p6<-ggplot(p6_data,aes(x=year,y= count))+
+  geom_point(aes(color=decade))+
+  geom_smooth(se=FALSE)+
+ labs(x = "Year", y = "Net Sentiment", title = "Net Sentiment Score By Year of Grammy Nominated Records from 1980-2019 with Linear Model Fit") +
+  
+ theme_minimal()
+p6
+```
+## Link to the video portion of the project
+https://psu.zoom.us/rec/share/pFLGu1PDXnQ95-MqRcBskAd_kddagzDWKdNcLMuNV-32XfLShHvdd_gERSix4nSM.NfjV3mr0ZIVkwUxp?startTime=1607977425000
